@@ -6,3 +6,6 @@ PROJECT_BRIEF.md
 .claude/
 node_modules/
 *.log
+
+# Copias de seguridad con datos de clientes: nunca al repositorio público
+respaldos/
