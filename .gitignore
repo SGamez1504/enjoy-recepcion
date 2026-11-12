@@ -1,0 +1,8 @@
+# Datos internos de la tienda y archivos de trabajo: no se publican
+data/
+docs/
+app/
+PROJECT_BRIEF.md
+.claude/
+node_modules/
+*.log
