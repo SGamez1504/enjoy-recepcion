@@ -31,7 +31,7 @@ const LAP_CATS = new Set(["Laptops", "Gaming Laptops"]);
 const EXT_CATS = new Set(["Monitores", "Mouse Gamer", "Teclado Gamer"]);
 const UNSORTED = new Set(["Sin categorizar", "Hardware"]);
 
-const APPLE_RE = /MacBook|iPhone|iPad|Apple/i;
+const APPLE_RE = /\b(?:MacBook|iPhone|iPad|Apple)\b/i;
 const CON_RE = /PlayStation|Xbox|Nintendo|Switch\b|Handheld|Legion Go|ROG Ally|\bClaw\b/i;
 const CPU_RE = /Procesador|Ryzen|Core i\d|Core Ultra/i;
 

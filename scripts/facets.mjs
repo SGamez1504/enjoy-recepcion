@@ -331,7 +331,7 @@ const CON_REF = [
 const APPLE_FAM = [
   [/MacBook\s*(Air|Pro)\s*(\d{2})/i, (m) => `MacBook ${title(m[1])} ${m[2]}`], [/MacBook\s*(Air|Pro)/i, (m) => `MacBook ${title(m[1])}`],
   [/iPhone\s*(\d{1,2}[a-z]?)\s*(Pro\s*Max|Pro|Plus|Air|e)?/i, (m) => `iPhone ${m[1]}` + (m[2] ? " " + title(m[2].replace(/\s+/g, " ")) : "")],
-  [/iPad\s*(Pro|Air|mini)/i, (m) => "iPad " + (m[1].toLowerCase() === "mini" ? "mini" : title(m[1]))], [/iPad/i, "iPad"],
+  [/iPad\s*(Pro|Air|mini)/i, (m) => "iPad " + (m[1].toLowerCase() === "mini" ? "mini" : title(m[1]))], [/\biPad\b/i, "iPad"],
   [/iMac/i, "iMac"], [/Mac\s*mini/i, "Mac mini"], [/Mac\s*Studio/i, "Mac Studio"], [/Apple\s*Watch/i, "Apple Watch"], [/AirPods/i, "AirPods"],
   [/Apple\s*Pencil/i, "Apple Pencil"], [/Magic\s*(Keyboard|Mouse|Trackpad)/i, (m) => "Magic " + m[1]],
 ];
