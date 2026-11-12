@@ -6,7 +6,10 @@ const SECS=[
  {k:'con',n:'Consolas',e:'🎮',c:'var(--muted)'},{k:'ext',n:'Extras',e:'🎧',c:'var(--muted)'},{k:'apple',n:'Apple',e:'🍎',c:'var(--fg)'}];
 const SUBN={mb:'MB',cpu:'CPU',ram:'RAM',ssd:'SSD',rl:'RL',rt:'RT',fan:'FAN',psu:'PSU',chasis:'Chasis'};
 const secOf=s=>SUBN[s]?'comp':s;
-const S={sb:null,me:null,recs:[],rid:null,lineas:{},conteos:{},cat:null,view:'login',sec:null,sub:'mb',q:'',f:{},more:false,
+const ALFA=new Intl.Collator('es',{numeric:true,sensitivity:'base'});
+/* subsecciones de Componentes en orden alfabético (las 8 secciones principales mantienen su orden) */
+const SUBS_ALFA=Object.keys(SUBN).sort((a,b)=>ALFA.compare(SUBN[a],SUBN[b]));
+const S={sb:null,me:null,recs:[],rid:null,lineas:{},conteos:{},cat:null,view:'login',sec:null,sub:'chasis',q:'',f:{},more:false,
   gc:{},gone:{},openbox:false,kg:false,local:{},pend:{},undo:[],live:false,confirm:null,chan:null,recChan:null,busy:false,loginErr:''};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -103,8 +106,8 @@ function nextLevel(items){
   for(const [k,label,i] of LV){if(S.f[k]!=null)continue;
     const c=new Map();items.forEach(p=>{const v=p[i]||'';c.set(v,(c.get(v)||0)+1)});
     if(c.size<2&&!(c.size===1&&!c.has('')))continue;
-    const w=S.cat?.w?.[S.sec==='comp'?S.sub:S.sec]||{};
-    const vals=[...c].sort((a,b)=>(!a[0])-(!b[0])||(w[k+':'+b[0]]||0)-(w[k+':'+a[0]]||0)||b[1]-a[1]);
+    /* orden alfanumérico natural (RTX 5060 < RTX 5060 Ti < RTX 5070); «Otros» al final */
+    const vals=[...c].sort((a,b)=>(!a[0])-(!b[0])||ALFA.compare(a[0],b[0]));
     if(c.size===1){S.f[k]=vals[0][0];continue}
     return{k,label,vals};
   }
@@ -297,17 +300,16 @@ function render(){
     const s=SECS.find(x=>x.k===S.sec);
     const keys=Object.keys(S.lineas).filter(k=>totals(k).t>0&&secOf(S.lineas[k].sec)===s.k&&(s.k!=='comp'||S.lineas[k].sec===S.sub)).sort((a,b)=>(S.lineas[b].ts||0)-(S.lineas[a].ts||0));
     const searching=norm(S.q).length>=2;
-    const items=pool(s.k);const nl=searching?null:nextLevel(items);const res=searching?search(s.k,S.q):(nl&&items.length>10?[]:items.slice(0,40));
+    const items=pool(s.k);const nl=searching?null:nextLevel(items);const res=searching?search(s.k,S.q):(nl&&items.length>10?[]:[...items].sort((a,b)=>ALFA.compare(a[1],b[1])).slice(0,40));
     const picked=LV.filter(([k])=>S.f[k]!=null);const unit=S.kg&&s.k==='ext'?'kg':'1';
     const prodRow=p=>`<button data-act="addcat" data-id="${p[0]}"><span class="grow">${esc(p[1])}<span class="sku">${esc(p[2]||p[3]||'')}</span></span><span class="plus">+1</span></button>`;
-    const shown=nl?(S.more?nl.vals:nl.vals.slice(0,18)):[];
+    const shown=nl?nl.vals:[];
     h=`<h2>${s.e} ${esc(s.n)}</h2>
-      ${s.subs?`<div class="subs" role="tablist">${s.subs.map(k=>`<button class="chip ${S.sub===k?'on':''}" data-act="sub" data-k="${k}" role="tab" aria-selected="${S.sub===k}">${SUBN[k]}</button>`).join('')}</div>`:''}
+      ${s.subs?`<div class="subs" role="tablist">${SUBS_ALFA.map(k=>`<button class="chip ${S.sub===k?'on':''}" data-act="sub" data-k="${k}" role="tab" aria-selected="${S.sub===k}">${SUBN[k]}</button>`).join('')}</div>`:''}
       ${closed()?'':`<div class="stack" style="margin-top:12px">
         ${picked.length?`<div class="crumbs">${picked.map(([k,label])=>`<button class="chip on" data-act="unf" data-k="${k}" aria-label="Quitar ${label}">${esc(S.f[k]||'Otros')} <span aria-hidden="true">✕</span></button>`).join('<span class="sep">›</span>')}</div>`:''}
         ${nl?`<h3 style="margin:4px 0 0">Elige ${nl.label.toLowerCase()} <span class="muted" style="text-transform:none;letter-spacing:0">· ${items.length} productos</span></h3>
-          <div class="facets">${shown.map(([v,c])=>`<button class="fchip" data-act="f" data-k="${nl.k}" data-v="${esc(v)}">${esc(v||'Otros')}<small>${c}</small></button>`).join('')}
-          ${nl.vals.length>18&&!S.more?`<button class="fchip ghost" data-act="more">Ver todas (${nl.vals.length})</button>`:''}</div>`:''}
+          <div class="facets">${shown.map(([v,c])=>`<button class="fchip" data-act="f" data-k="${nl.k}" data-v="${esc(v)}">${esc(v||'Otros')}<small>${c}</small></button>`).join('')}</div>`:''}
         ${res.length?`<h3 style="margin:4px 0 0">${searching?'Resultados':'Elige el producto'}</h3><div class="res">${res.map(prodRow).join('')}</div>`:''}
         ${searching||picked.length?`<div class="res"><button data-act="addfree"><span class="grow">Añadir «${esc(searching?S.q.trim():facetName())}» tal cual<span class="sku">Si no aparece en la lista</span></span><span class="plus">+${unit}</span></button></div>`:''}
         <div class="search"><input id="q" type="search" autocomplete="off" placeholder="…o busca por modelo o referencia" value="${esc(S.q)}" aria-label="Buscar producto"></div>
