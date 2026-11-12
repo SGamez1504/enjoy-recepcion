@@ -1,11 +1,13 @@
 // Genera catalogo.json (catalogo reducido + productos frecuentes).
 // Uso: node scripts/build_catalog.mjs
 // Entrada: data/catalogo.csv (UTF-8 con BOM), data/inventarios/inventario-*.txt
-// Salida:  catalogo.json  {"v":2,"p":[[id,nombre_corto,sku,mpn,sec,marca,gama,ref],...],"f":{sec:[...]},"w":{sec:{"m:x":n,"g:x":n,"r:x":n}}}
+// Salida:  catalogo.json  {"v":3,"p":[[id,nombre_corto,sku,mpn,sec,marca,gama,ref],...],"f":{sec:[...]},"w":{sec:{"m:x":n,"g:x":n,"r:x":n}}}
 // Port de scripts/build_catalog.py (misma logica).
 import { readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { dedupe } from "./dedupe.mjs";
+import { lapSpecs } from "./lapspecs.mjs";
 import { facets, valueRegex, norm, EXTRACT_ONLY_GAMA, EXTRACT_ONLY_REF } from "./facets.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -221,7 +223,7 @@ function parseCsv(s) {
 const csvText = readFileSync(CSV_PATH, "utf8").replace(/^﻿/, "");
 const [header, ...body] = parseCsv(csvText);
 const col = Object.fromEntries(header.map((h, i) => [h, i]));
-const products = [];
+const items = [];
 const dbg = [];
 let skipped = 0;
 for (const r of body) {
@@ -229,11 +231,23 @@ for (const r of body) {
   const cats = (r[col.categorias] || "").split("|").map((c) => c.trim()).filter(Boolean);
   const sec = classify(r[col.nombre], cats);
   if (sec === null) { skipped++; continue; }
-  products.push([Number(r[col.id]), shortName(r[col.nombre], sec),
-    (r[col.sku] || "").trim(), (r[col.mpn] || "").trim(), sec, ...facets(sec, r[col.nombre])]);
-  if (process.env.FACETS_DEBUG) dbg.push([sec, r[col.nombre], ...products[products.length - 1].slice(5)].join("	"));
+  const p = [Number(r[col.id]), shortName(r[col.nombre], sec),
+    (r[col.sku] || "").trim(), (r[col.mpn] || "").trim(), sec, ...facets(sec, r[col.nombre])];
+  if (sec === "lap") p.push(...lapSpecs(r[col.nombre]));
+  items.push({ p, guard: sec === "lap" ? p.slice(8).join("/") : "", full: r[col.nombre], estado: (r[col.estado] || "").trim(), stock: Number(r[col.stock]) || 0 });
+  if (process.env.FACETS_DEBUG) dbg.push([sec, r[col.nombre], ...p.slice(5)].join("	"));
 }
 
+const before = {};
+for (const it of items) before[it.p[4]] = (before[it.p[4]] || 0) + 1;
+const dd = dedupe(items);
+const ord = new Map(items.map((x, i) => [x, i]));
+const products = dd.out.sort((a, b) => ord.get(a) - ord.get(b)).map((x) => x.p);
+if (process.env.DEDUPE_REPORT) {
+  const t = (s) => (s.length > 90 ? s.slice(0, 90) : s);
+  writeFileSync(process.env.DEDUPE_REPORT, JSON.stringify({ before, merged: dd.merged,
+    groups: dd.groups.slice(0, 400).map((g) => g.map((x) => [x.p[0], x.p[4], t(x.full), x.p[2], x.estado, x.stock])) }), "utf8");
+}
 const inv = readInventories();
 // w: lineas de inventario por seccion que contienen cada marca/gama/ref
 const KIND = ["m", "g", "r"];
@@ -257,7 +271,7 @@ for (const [sec, text] of inv.lines) {
   const ws = (w[sec] ??= {});
   for (const h of hit) ws[h] = (ws[h] || 0) + 1;
 }
-const data = { v: 2, p: products, f: inv.freq, w };
+const data = { v: 3, p: products, f: inv.freq, w };
 const text = JSON.stringify(data);
 JSON.parse(text); // validacion
 mkdirSync(dirname(OUT_PATH), { recursive: true });

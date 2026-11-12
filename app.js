@@ -92,10 +92,13 @@ async function addLine({sec,nombre,pid,sku}){
 
 /* ---------- catálogo ---------- */
 async function loadCat(){try{const r=await fetch('catalogo.json');S.cat=await r.json();S.cat.p.forEach(p=>p.h=norm(p[1]+' '+p[2]+' '+p[3]))}catch(e){S.cat={p:[],f:{}}}render()}
-const LV=[['m','Marca',5],['g','Gama',6],['r','Referencia',7]];
+/* Niveles de selección. En Portátiles hay más filtros (procesador, RAM, SSD, pantalla) para llegar rápido al modelo. */
+const LV_BASE=[['m','Marca',5],['g','Gama',6],['r','Referencia',7]];
+const LV_LAP=[['m','Marca',5],['g','Familia',6],['r','Gráfica',7],['c','Procesador',8],['ram','RAM',9],['ssd','Almacenamiento',10],['pan','Pantalla',11]];
+const LVs=()=>S.sec==='lap'?LV_LAP:LV_BASE;
 function pool(sec){
   if(!S.cat)return[];const match=sec==='comp'?S.sub:sec;
-  return S.cat.p.filter(p=>p[4]===match&&LV.every(([k,,i])=>S.f[k]==null||(p[i]||'')===S.f[k]));
+  return S.cat.p.filter(p=>p[4]===match&&LVs().every(([k,,i])=>S.f[k]==null||(p[i]||'')===S.f[k]));
 }
 function search(sec,q){
   if(norm(q).length<2)return[];const toks=norm(q).split(' ');
@@ -103,7 +106,7 @@ function search(sec,q){
 }
 /* siguiente nivel a elegir: el primero sin seleccionar que tenga más de un valor */
 function nextLevel(items){
-  for(const [k,label,i] of LV){if(S.f[k]!=null)continue;
+  for(const [k,label,i] of LVs()){if(S.f[k]!=null)continue;
     const c=new Map();items.forEach(p=>{const v=p[i]||'';c.set(v,(c.get(v)||0)+1)});
     if(c.size<2&&!(c.size===1&&!c.has('')))continue;
     /* orden alfanumérico natural (RTX 5060 < RTX 5060 Ti < RTX 5070); «Otros» al final */
@@ -113,7 +116,7 @@ function nextLevel(items){
   }
   return null;
 }
-function facetName(){return [S.f.g,S.f.m,S.f.r].filter(Boolean).join(' ')}
+function facetName(){return (S.sec==='lap'?[S.f.m,S.f.g,S.f.c,S.f.r,S.f.ram,S.f.ssd]:[S.f.g,S.f.m,S.f.r]).filter(Boolean).join(' ')}
 
 /* ---------- Supabase: sesión, datos y tiempo real ---------- */
 function boot(){
@@ -300,8 +303,8 @@ function render(){
     const s=SECS.find(x=>x.k===S.sec);
     const keys=Object.keys(S.lineas).filter(k=>totals(k).t>0&&secOf(S.lineas[k].sec)===s.k&&(s.k!=='comp'||S.lineas[k].sec===S.sub)).sort((a,b)=>(S.lineas[b].ts||0)-(S.lineas[a].ts||0));
     const searching=norm(S.q).length>=2;
-    const items=pool(s.k);const nl=searching?null:nextLevel(items);const res=searching?search(s.k,S.q):(nl&&items.length>10?[]:[...items].sort((a,b)=>ALFA.compare(a[1],b[1])).slice(0,40));
-    const picked=LV.filter(([k])=>S.f[k]!=null);const unit=S.kg&&s.k==='ext'?'kg':'1';
+    const items=pool(s.k);const nl=searching?null:nextLevel(items);const res=searching?search(s.k,S.q):(nl&&items.length>(S.sec==='lap'?25:10)?[]:[...items].sort((a,b)=>ALFA.compare(a[1],b[1])).slice(0,40));
+    const picked=LVs().filter(([k])=>S.f[k]!=null);const unit=S.kg&&s.k==='ext'?'kg':'1';
     const prodRow=p=>`<button data-act="addcat" data-id="${p[0]}"><span class="grow">${esc(p[1])}<span class="sku">${esc(p[2]||p[3]||'')}</span></span><span class="plus">+1</span></button>`;
     const shown=nl?nl.vals:[];
     h=`<h2>${s.e} ${esc(s.n)}</h2>
@@ -351,7 +354,7 @@ document.addEventListener('click',e=>{
   if(a==='sec'){S.view='sec';S.sec=b.dataset.k;S.q='';S.f={};S.more=false;window.scrollTo(0,0);return render()}
   if(a==='sub'){S.sub=b.dataset.k;S.q='';S.f={};S.more=false;return render()}
   if(a==='f'){S.f[b.dataset.k]=b.dataset.v;S.more=false;vib();return render()}
-  if(a==='unf'){const i=LV.findIndex(l=>l[0]===b.dataset.k);LV.slice(i).forEach(([k])=>delete S.f[k]);S.more=false;return render()}
+  if(a==='unf'){const L=LVs();const i=L.findIndex(l=>l[0]===b.dataset.k);L.slice(i).forEach(([k])=>delete S.f[k]);S.more=false;return render()}
   if(a==='more'){S.more=true;return render()}
   if(a==='back'||a==='backrec'){S.view=S.rid?'rec':'home';S.q='';S.confirm=null;window.scrollTo(0,0);return render()}
   if(a==='sum'){S.view='sum';window.scrollTo(0,0);return render()}

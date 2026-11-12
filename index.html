@@ -112,6 +112,14 @@ pre.wa{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.5 var(--mono);bac
 .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;z-index:20;max-width:calc(100% - 32px)}
 .names input{width:100%;min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--surface);padding:0 12px}
 @media (prefers-reduced-motion:no-preference){.counter button:active,.tile:active,.btn:active{transform:scale(.97)}}
+
+/* Textos largos: siempre saltan de línea, nunca se recortan */
+.pill{white-space:normal;overflow-wrap:anywhere;line-height:1.3;max-width:100%}
+.res .sku{white-space:normal;overflow-wrap:anywhere;text-overflow:clip}
+.res .grow,.list-item b,.sum-row .grow,.crumbs .chip,.fchip{overflow-wrap:anywhere}
+.chip{max-width:100%;text-align:left;line-height:1.25;padding-block:6px}
+.fchip{padding-block:8px;line-height:1.25}
+.toast{border-radius:14px;text-align:center;width:max-content;line-height:1.35}
 </style>
 
 </head>
