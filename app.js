@@ -118,6 +118,7 @@ function boot(){
   if(!window.CONFIG?.supabaseUrl||!window.supabase){$('app').innerHTML='<h2>Falta configuración</h2><p class="muted">Revisa config.js.</p>';return}
   S.sb=window.supabase.createClient(CONFIG.supabaseUrl,CONFIG.supabaseKey);
   S.sb.auth.onAuthStateChange((_ev,session)=>{
+    if(session&&expired()){setTimeout(()=>forceLogout(),0);return}
     const email=session?.user?.email||null;
     if(email===S.me)return;
     S.me=email;
@@ -125,10 +126,22 @@ function boot(){
     render();
   });
 }
+/* La sesión dura hasta las 00:00 hora Colombia: cada día hay que volver a entrar. */
+const DAY_KEY='enjoy.diaSesion';
+const hoyCO=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bogota'}).format(new Date());
+function expired(){let d=null;try{d=localStorage.getItem(DAY_KEY)}catch(e){}return d!==hoyCO()}
+async function forceLogout(){
+  if(S.loggingOut)return;S.loggingOut=true;
+  await S.sb.auth.signOut();S.loggingOut=false;S.me=null;stopAll();S.view='login';
+  S.loginErr='Tu sesión terminó a las 00:00 (hora Colombia). Vuelve a entrar.';render();
+}
+setInterval(()=>{if(S.me&&expired())forceLogout()},30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.me&&expired())forceLogout()});
 async function login(email,password){
   S.busy=true;S.loginErr='';render();
+  try{localStorage.setItem(DAY_KEY,hoyCO())}catch(e){}
   const {error}=await S.sb.auth.signInWithPassword({email,password});
-  S.busy=false;if(error)S.loginErr='Correo o contraseña incorrectos.';render();
+  S.busy=false;if(error){S.loginErr='Correo o contraseña incorrectos.';try{localStorage.removeItem(DAY_KEY)}catch(e){}}render();
 }
 function sessionLost(){toast('Tu sesión caducó: vuelve a entrar');S.sb.auth.signOut()}
 function stopAll(){if(S.chan){S.sb.removeChannel(S.chan);S.chan=null}if(S.recChan){S.sb.removeChannel(S.recChan);S.recChan=null}S.recs=[];S.rid=null;S.live=false}
