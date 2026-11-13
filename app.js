@@ -95,7 +95,9 @@ async function loadCat(){try{const r=await fetch('catalogo.json');S.cat=await r.
 /* Niveles de selección. En Portátiles hay más filtros (procesador, RAM, SSD, pantalla) para llegar rápido al modelo. */
 const LV_BASE=[['m','Marca',5],['g','Gama',6],['r','Referencia',7]];
 const LV_LAP=[['m','Marca',5],['c','Procesador',8],['ram','RAM',9],['ssd','Almacenamiento',10],['r','Gráfica',7]];
-const LVs=()=>S.sec==='lap'?LV_LAP:LV_BASE;
+const LV_RAM=[['m','Marca',5],['g','Capacidad',6],['mts','MT/s',8],['cl','CL',9]];
+const isRam=()=>S.sec==='comp'&&S.sub==='ram';
+const LVs=()=>S.sec==='lap'?LV_LAP:isRam()?LV_RAM:LV_BASE;
 function pool(sec){
   if(!S.cat)return[];const match=sec==='comp'?S.sub:sec;
   return S.cat.p.filter(p=>p[4]===match&&LVs().every(([k,,i])=>S.f[k]==null||(p[i]||'')===S.f[k]));
@@ -116,7 +118,7 @@ function nextLevel(items){
   }
   return null;
 }
-function facetName(){return (S.sec==='lap'?[S.f.m,S.f.c,S.f.ram,S.f.ssd,S.f.r]:[S.f.g,S.f.m,S.f.r]).filter(Boolean).join(' ')}
+function facetName(){return (S.sec==='lap'?[S.f.m,S.f.c,S.f.ram,S.f.ssd,S.f.r]:isRam()?[S.f.m,S.f.g,S.f.mts,S.f.cl]:[S.f.g,S.f.m,S.f.r]).filter(Boolean).join(' ')}
 
 /* ---------- Supabase: sesión, datos y tiempo real ---------- */
 function boot(){

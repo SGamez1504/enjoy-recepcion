@@ -8,6 +8,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { dedupe } from "./dedupe.mjs";
 import { lapSpecs } from "./lapspecs.mjs";
+import { ramSpecs } from "./ramspecs.mjs";
 import { facets, valueRegex, norm, EXTRACT_ONLY_GAMA, EXTRACT_ONLY_REF } from "./facets.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -257,7 +258,8 @@ for (const r of body) {
   const p = [Number(r[col.id]), shortName(r[col.nombre], sec),
     (r[col.sku] || "").trim(), (r[col.mpn] || "").trim(), sec, ...facets(sec, r[col.nombre])];
   if (sec === "lap") p.push(...lapSpecs(r[col.nombre]));
-  items.push({ p, guard: sec === "lap" ? p.slice(8).join("/") : "", full: r[col.nombre], estado: (r[col.estado] || "").trim(), stock: Number(r[col.stock]) || 0 });
+  if (sec === "ram") p.push(...ramSpecs(r[col.nombre], r[col.mpn], r[col.sku]));
+  items.push({ p, guard: sec === "lap" || sec === "ram" ? p.slice(8).join("/") : "", full: r[col.nombre], estado: (r[col.estado] || "").trim(), stock: Number(r[col.stock]) || 0 });
   if (process.env.FACETS_DEBUG) dbg.push([sec, r[col.nombre], ...p.slice(5)].join("	"));
 }
 
