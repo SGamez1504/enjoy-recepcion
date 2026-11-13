@@ -6,11 +6,20 @@ export function lapSpecs(title) {
   else if ((m = /\bApple\s+(M\d)(\s+(?:Pro|Max|Ultra))?/i.exec(t)) || (m = /\b(M[1-5])(\s+(?:Pro|Max|Ultra))?\b/.exec(t)))
     cpu = "Apple " + m[1].toUpperCase() + (m[2] ? " " + m[2].trim() : "");
   else if ((m = /Ryzen\s+AI\s+Max\+?\s*(\d{3})/i.exec(t))) cpu = "Ryzen AI Max+ " + m[1];
-  else if ((m = /Ryzen\s+AI\s+(\d)\s+(?:Max\+?\s*)?(\d{3}\w*)/i.exec(t))) cpu = `Ryzen AI ${m[1]} ${m[2].toUpperCase()}`;
-  else if ((m = /Ryzen\s+([3579])\s+(?:PRO\s+)?(\d{3,5}\w*)/i.exec(t))) cpu = `Ryzen ${m[1]} ${m[2].toUpperCase().replace(/(\d)([A-Z]+)$/, "$1$2")}`;
-  else if ((m = /Core\s+Ultra\s+([3579])\s+(\d{3}\w*)/i.exec(t))) cpu = `Core Ultra ${m[1]} ${m[2].toUpperCase()}`;
-  else if ((m = /Core\s+([3579])\s+(?:Processor\s+)?(\d{3}\w*)/i.exec(t)) && !/i[3579]/i.test(m[0])) cpu = `Core ${m[1]} ${m[2].toUpperCase()}`;
+  else if ((m = /Ryzen\s+AI\s+(\d)\s+(?:PRO\s+)?(?:HX\s+)?(?:Max\+?\s*)?(\d{3}\w*)/i.exec(t))) cpu = `Ryzen AI ${m[1]} ${/HX\s+\d/i.test(m[0]) ? "HX " : ""}${m[2].toUpperCase()}`;
+  else if ((m = /Ryzen\s+([3579])\s+(?:PRO\s+)?(\d{2,5}\w*)/i.exec(t))) cpu = `Ryzen ${m[1]} ${m[2].toUpperCase()}`;
+  else if ((m = /RTX\s+Spark\s+(N\d\w*)/i.exec(t))) cpu = "NVIDIA RTX Spark " + m[1].toUpperCase();
+  else if ((m = /Snapdragon\s+(C\b|\d\w*)/i.exec(t))) cpu = "Snapdragon " + m[1].toUpperCase();
+  else if ((m = /Core\s+Ultra\s+(X?[3579])\s+(\d{3}\w*)/i.exec(t))) cpu = `Core Ultra ${m[1].toUpperCase()} ${m[2].toUpperCase()}`;
+  else if ((m = /Core\s+([3579])\s+(?:Processor\s+)?(N?\d{3}\w*)/i.exec(t)) && !/i[3579]/i.test(m[0])) cpu = `Core ${m[1]} ${m[2].toUpperCase()}`;
+  else if ((m = /Intel\s+(?:Processor\s+)?(N\d{2,3})\b/i.exec(t))) cpu = "Intel " + m[1].toUpperCase();
   else if ((m = /\bi([3579])[-\s]?(\d{4,5}\w{0,3})\b/i.exec(t))) cpu = `Core i${m[1]}-${m[2].toUpperCase()}`;
+  else if ((m = /Ryzen\s+A[Il]\s+(\d)\s+(\d{3}\w*)/i.exec(t))) cpu = `Ryzen AI ${m[1]} ${m[2].toUpperCase()}`;
+  // solo la serie (sin modelo exacto en el título)
+  else if ((m = /(?:Core\s+|Intel\s+)Ultra\s*(X?[3579])\b/i.exec(t))) cpu = "Core Ultra " + m[1].toUpperCase();
+  else if ((m = /Core\s+([3579])\b(?!\s*\d)/i.exec(t))) cpu = "Core " + m[1];
+  else if (/Intel\s+N-Series/i.test(t)) cpu = "Intel N-Series";
+  else if ((m = /Processor\s+(N\d{3,4})\b/i.exec(t))) cpu = "Celeron " + m[1].toUpperCase();
   else if ((m = /Celeron\s+(\w+)/i.exec(t))) cpu = "Celeron " + m[1].toUpperCase();
   else if ((m = /Athlon\s+(\w+)/i.exec(t))) cpu = "Athlon " + m[1];
 
