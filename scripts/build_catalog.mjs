@@ -101,7 +101,30 @@ function nameSection(name) {
   return null;
 }
 
+// Correcciones por nombre: la categoría de WooCommerce a veces está mal asignada
+const RAMISH = /\bRAM\b.*\b(SO-?DIMM|LPCAMM|\d{3}-Pin)\b|\bSO-?DIMM\b|LPCAMM|\d{3}-Pin/i;
+const LAPTOP_RE = /\b(Gaming\s+)?(Laptop|Notebook)\b/i;
+const FIXES = [
+  [["ssd", "nv", "amd", "intel", "cpu", "mb"], (n) => LAPTOP_RE.test(n) && !RAMISH.test(n) && !/Bundle.*Socket/i.test(n), "lap"],
+  [["con"], (n) => /Solid State Drive|Internal Solid State/i.test(n) && !/Handheld|Ayaneo|Pocket|Consola/i.test(n), "ssd"],
+  [["con"], (n) => /Keyboard|Teclado|\bMouse\b|Keychain|Llavero/i.test(n), "ext"],
+  [["rt", "fan", "rl", "chasis", "cpu"], (n) => /PSU extension|Power Supply Adapter|Marco de contacto|RAM Cooler|para TV|Display Screen/i.test(n), "ext"],
+  [["rt"], (n) => /Case Fan|PWM Fan Single|Ventiladores de caja/i.test(n), "fan"],
+  [["fan"], (n) => /\bAIO\b|refrigeraci[oó]n por agua|Enfriador de agua|Liquid/i.test(n), "rl"],
+  [["rl"], (n) => /Micro-ATX Tower|Mid Tower|Full Tower/i.test(n), "chasis"],
+  [["rl"], (n) => /refrigeraci[oó]n por aire|\bAir Cooler\b/i.test(n) ||
+    (/Enfriador de CPU|Assassin|Peerless/i.test(n) && !/\b(240|280|360|420)\b/.test(n)), "rt"],
+];
+function fixSection(sec, nombre) {
+  for (const [from, test, to] of FIXES) if (from.includes(sec) && test(nombre)) return to;
+  return sec;
+}
+
 function classify(nombre, cats) {
+  return fixSection(classifyBase(nombre, cats), nombre);
+}
+
+function classifyBase(nombre, cats) {
   const cs = new Set(cats);
   if ([...cs].some((c) => c === "MacBooks" || c === "iPad") || APPLE_RE.test(nombre)) return "apple";
   if (cats.some((c) => /^(PlayStation|Xbox|Nintendo|Consolas)/.test(c)) || CON_RE.test(nombre)) return "con";
